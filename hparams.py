@@ -21,6 +21,15 @@ class Hparams:
 
     ###### Model Parameters ######
 
+    ### Listener ###
+    init_emb_dims:int = 128
+
+    locked_dropout:bool = True
+    p_lockdrop:float = 0.3
+
+    hidden_size:int = 64
+    pyramidal_layers:int = 3 # Downsamples by 2^n
+
     ###### END Model Parameters ######
 
     ### Sys Parameters ###
