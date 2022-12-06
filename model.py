@@ -171,3 +171,66 @@ class ModularListener(nn.Module):
         x, xl = pad_packed_sequence(x, batch_first=True, enforce_sorted=False)
 
         return x, xl
+
+
+class Attention(torch.nn.Module):
+    '''
+    Attention is calculated using the key, value (from encoder hidden states) and query from decoder.
+    Here are different ways to compute attention and context:
+
+    After obtaining the raw weights, compute and return attention weights and context as follows.:
+
+    masked_raw_weights  = mask(raw_weights) # mask out padded elements with big negative number (e.g. -1e9 or -inf in FP16)
+    attention           = softmax(masked_raw_weights)
+    context             = bmm(attention, value)
+    
+    At the end, you can pass context through a linear layer too.
+
+    '''
+    
+    def __init__(self, encoder_hidden_size, decoder_output_size, projection_size):
+        super(Attention, self).__init__()
+
+        self.key_projection     = nn.Linear(encoder_hidden_size, projection_size)
+        self.value_projection   = nn.Linear(encoder_hidden_size, projection_size)
+        self.query_projection   = nn.Linear(decoder_output_size, projection_size)
+
+        self.softmax            = nn.Softmax(1) # Check dim
+        # Tip: What is the shape of energy? And what are those?
+
+    # As you know, in the attention mechanism, the key, value and mask are calculated only once.
+    # This function is used to calculate them and set them to self
+    def set_key_value_mask(self, encoder_outputs, encoder_lens):
+    
+        _, encoder_max_seq_len, _ = encoder_outputs.shape
+
+        self.key      = # TODO: Project encoder_outputs using key_projection to get keys
+        self.value    = # TODO: Project encoder_outputs using value_projection to get values
+
+        # encoder_max_seq_len is of shape (batch_size, ) which consists of the lengths encoder output sequences in that batch
+        # The raw_weights are of shape (batch_size, timesteps)
+
+        # TODO: To remove the influence of padding in the raw_weights, we want to create a boolean mask of shape (batch_size, timesteps) 
+        # The mask is False for all indicies before padding begins, True for all indices after.
+        self.padding_mask     =  # TODO: You want to use a comparison between encoder_max_seq_len and encoder_lens to create this mask. 
+        # (Hint: Broadcasting gives you a one liner)
+        
+    def forward(self, decoder_output_embedding):
+        # key   : (batch_size, timesteps, projection_size)
+        # value : (batch_size, timesteps, projection_size)
+        # query : (batch_size, projection_size)
+
+        self.query         = # TODO: Project the query using query_projection
+
+        # Hint: Take a look at torch.bmm for the products below 
+
+        raw_weights        = # TODO: Calculate raw_weights which is the product of query and key, and is of shape (batch_size, timesteps)
+        masked_raw_weights = # TODO: Mask the raw_weights with self.padding_mask. 
+        # Take a look at pytorch's masked_fill_ function (You want the fill value to be a big negative number for the softmax to make it close to 0)
+
+        attention_weights  = # TODO: Calculate the attention weights, which is the softmax of raw_weights
+        context            = # TODO: Calculate the context - it is a product between attention_weights and value
+
+        # Hint: You might need to use squeeze/unsqueeze to make sure that your operations work with bmm
+
+        return context, attention_weights # Return the context, attention_weights
