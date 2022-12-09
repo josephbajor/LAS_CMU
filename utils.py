@@ -11,7 +11,7 @@ import pandas as pd
 import Levenshtein
 
 
-def initiate_run(hparams: Hparams, model:torch.nn.Module):
+def initiate_run(hparams: Hparams, model: torch.nn.Module):
     """
     Initialize connection to wandb and begin the run using provided hparams
     """
@@ -63,42 +63,47 @@ def prepare_instance() -> None:
 
 def indices_to_chars(indices, vocab, EOS_TOKEN=29, SOS_TOKEN=0):
     tokens = []
-    for i in indices: # This loops through all the indices
-        if vocab[int(i)] == SOS_TOKEN: # If SOS is encountered, dont add it to the final list
+    for i in indices:  # This loops through all the indices
+        if (
+            vocab[int(i)] == SOS_TOKEN
+        ):  # If SOS is encountered, dont add it to the final list
             continue
-        elif vocab[int(i)] == EOS_TOKEN: # If EOS is encountered, stop the decoding process
+        elif (
+            vocab[int(i)] == EOS_TOKEN
+        ):  # If EOS is encountered, stop the decoding process
             break
         else:
             tokens.append(vocab[i])
     return tokens
 
-def calc_edit_distance(data_type, predictions, y, ly, vocab, print_example= False):
 
-    dist                = 0
-    batch_size, seq_len = predictions.shape
+def calc_edit_distance(data_type, predictions, y, ly, vocab, print_example=False):
+
+    dist = 0
+    batch_size, seq_len = predictions.T.shape
 
     for batch_idx in range(batch_size):
 
         if data_type == "toy":
-            y_sliced    = indices_to_chars(y[batch_idx,0:ly[batch_idx]], vocab)
+            y_sliced = indices_to_chars(y[batch_idx, 0 : ly[batch_idx]], vocab)
             pred_sliced = indices_to_chars(predictions[batch_idx], vocab)
-            dist      += Levenshtein.distance(y_sliced, pred_sliced)
+            dist += Levenshtein.distance("".join(y_sliced), "".join(pred_sliced))
 
-            if print_example: 
+            if print_example:
                 print("Ground Truth : ", y_sliced)
                 print("Prediction   : ", pred_sliced)
 
         if data_type == "main":
-        # Strings - When you are using characters from the AudioDataset
-            y_string    = ''.join(y_sliced)
-            pred_string = ''.join(pred_sliced)
-            dist        += Levenshtein.distance(pred_string, y_string)
+            # Strings - When you are using characters from the AudioDataset
+            y_string = "".join(y_sliced)
+            pred_string = "".join(pred_sliced)
+            dist += Levenshtein.distance(pred_string, y_string)
 
-            if print_example: 
+            if print_example:
                 print("Ground Truth : ", y_string)
                 print("Prediction   : ", pred_string)
-        
-    dist/=batch_size
+
+    dist /= batch_size
     return dist
 
 

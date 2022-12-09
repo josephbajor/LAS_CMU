@@ -107,7 +107,14 @@ if __name__ == "__main__":
 
     model_pth, model_save_pth = setup_model_paths(hparams)
 
-    model = LAS(hparams, vocab_size=len(VOCAB), input_size=15)
+    model = LAS(
+        hparams,
+        SOS_TOKEN=SOS_TOKEN,
+        EOS_TOKEN=EOS_TOKEN,
+        DEVICE=DEVICE,
+        vocab_size=len(VOCAB),
+        input_size=15,
+    ).to(DEVICE)
 
     optimizer = torch.optim.Adam(
         model.parameters(), lr=hparams.lr, amsgrad=True, weight_decay=5e-6
@@ -140,7 +147,7 @@ if __name__ == "__main__":
             scaler=scaler,
             optimizer=optimizer,
             teacher_forcing_rate=1,
-            DEVICE=DEVICE
+            DEVICE=DEVICE,
         )
         print(
             "Epoch {}/{}: Train Loss {}, Train Perplex {}".format(
@@ -168,7 +175,7 @@ if __name__ == "__main__":
                 "train_perplex": running_perplexity,
                 "validation_dist": valid_dist,
                 "tf_rate": tf_rate,
-                "learning_Rate": optimizer.param_groups["lr"],
+                "learning_Rate": optimizer.param_groups[0]["lr"],
             }
         )
         # Optional: Scheduler Step / Teacher Force Schedule Step

@@ -47,7 +47,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "mac"
+    platform: str = "desktop"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (

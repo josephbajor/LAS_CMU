@@ -41,7 +41,9 @@ class pBLSTM(torch.nn.Module):
     To make our implementation modular, we pass 1 layer at a time.
     """
 
-    def __init__(self, input_size, hidden_size, locked_dropout:bool=False, p:float=0.3):
+    def __init__(
+        self, input_size, hidden_size, locked_dropout: bool = False, p: float = 0.3
+    ):
         super(pBLSTM, self).__init__()
 
         self.locked_dropout = locked_dropout
@@ -50,7 +52,7 @@ class pBLSTM(torch.nn.Module):
         self.ld = lstm_locked_dropout(p=p)
 
         self.blstm = nn.LSTM(
-            input_size=input_size*2, hidden_size=hidden_size, bidirectional=True
+            input_size=input_size * 2, hidden_size=hidden_size, bidirectional=True
         )  # TODO: Initialize a single layer bidirectional LSTM with the given input_size and hidden_size
 
     def trunc_reshape(self, x, x_lens):
@@ -63,7 +65,6 @@ class pBLSTM(torch.nn.Module):
         x = x.reshape((x.shape[0], x.shape[1] // 2, x.shape[2] * 2))
         x_lens = x_lens // 2
         # x_lens = torch.clamp(x_lens, max=x.shape[1])
-
 
         return x, x_lens
 
@@ -158,7 +159,9 @@ class ModularListener(nn.Module):
         )
 
         self.base_lstm = torch.nn.LSTM(
-            input_size=hparams.enc_init_emb_dims, hidden_size=hparams.enc_hidden_size, bidirectional=True
+            input_size=hparams.enc_init_emb_dims,
+            hidden_size=hparams.enc_hidden_size,
+            bidirectional=True,
         )
 
         self.pBLSTMs = torch.nn.Sequential()
@@ -170,16 +173,16 @@ class ModularListener(nn.Module):
                     input_size=hparams.enc_hidden_size * (2**i) * 2,
                     hidden_size=hparams.enc_hidden_size * (2 ** (i + 1)),
                     locked_dropout=self.hparams.enc_locked_dropout,
-                    p=self.hparams.enc_p_lockdrop
+                    p=self.hparams.enc_p_lockdrop,
                 ),
             )
 
     def forward(self, x, xl):
-        
+
         if self.hparams.enc_use_conv1d_emb:
-            x = x.permute(0,2,1)
+            x = x.permute(0, 2, 1)
             x = self.embedding(x)
-            x = x.permute(0,2,1)
+            x = x.permute(0, 2, 1)
 
         x = pack_padded_sequence(x, xl, batch_first=True, enforce_sorted=False)
 
@@ -193,7 +196,7 @@ class ModularListener(nn.Module):
 
 
 class Attention(torch.nn.Module):
-    '''
+    """
     Attention is calculated using the key, value (from encoder hidden states) and query from decoder.
     Here are different ways to compute attention and context:
 
@@ -202,150 +205,201 @@ class Attention(torch.nn.Module):
     masked_raw_weights  = mask(raw_weights) # mask out padded elements with big negative number (e.g. -1e9 or -inf in FP16)
     attention           = softmax(masked_raw_weights)
     context             = bmm(attention, value)
-    
+
     At the end, you can pass context through a linear layer too.
 
-    '''
-    
-    def __init__(self, hparams:Hparams):
+    """
+
+    def __init__(self, hparams: Hparams, DEVICE):
         super(Attention, self).__init__()
 
         self.hparams = hparams
 
-        self.key_projection     = nn.Linear(self.hparams.enc_output_size, self.hparams.att_projection_size)
-        self.value_projection   = nn.Linear(self.hparams.enc_output_size, self.hparams.att_projection_size)
-        self.query_projection   = nn.Linear(self.hparams.dec_output_size, self.hparams.att_projection_size)
+        self.DEVICE = DEVICE
 
+        self.key_projection = nn.Linear(
+            self.hparams.enc_output_size, self.hparams.att_projection_size
+        )
+        self.value_projection = nn.Linear(
+            self.hparams.enc_output_size, self.hparams.att_projection_size
+        )
+        self.query_projection = nn.Linear(
+            self.hparams.dec_output_size, self.hparams.att_projection_size
+        )
 
-        self.softmax            = nn.Softmax(1) # Check dim
+        self.softmax = nn.Softmax(1)  # Check dim
         # Tip: What is the shape of energy? And what are those?
 
     # As you know, in the attention mechanism, the key, value and mask are calculated only once.
     # This function is used to calculate them and set them to self
     def set_key_value_mask(self, encoder_outputs, encoder_lens):
-    
+
         _, encoder_max_seq_len, _ = encoder_outputs.shape
 
-        self.key      = self.key_projection(encoder_outputs)
-        self.value    = self.value_projection(encoder_outputs)
+        self.key = self.key_projection(encoder_outputs)
+        self.value = self.value_projection(encoder_outputs)
 
         # encoder_max_seq_len is of shape (batch_size, ) which consists of the lengths encoder output sequences in that batch
         # The raw_weights are of shape (batch_size, timesteps)
 
-        # TODO: To remove the influence of padding in the raw_weights, we want to create a boolean mask of shape (batch_size, timesteps) 
+        # TODO: To remove the influence of padding in the raw_weights, we want to create a boolean mask of shape (batch_size, timesteps)
         # The mask is False for all indicies before padding begins, True for all indices after.
-        self.padding_mask     = torch.arange(encoder_max_seq_len).unsqueeze(0) >= encoder_lens.unsqueeze(1)
-        # TODO: You want to use a comparison between encoder_max_seq_len and encoder_lens to create this mask.
-        # (Hint: Broadcasting gives you a one liner)
-        
+        self.padding_mask = torch.arange(encoder_max_seq_len).unsqueeze(
+            0
+        ) >= encoder_lens.unsqueeze(1)
+        self.padding_mask = self.padding_mask.to(self.DEVICE)
+
     def forward(self, decoder_output_embedding):
         # key   : (batch_size, timesteps, projection_size)
         # value : (batch_size, timesteps, projection_size)
         # query : (batch_size, projection_size)
 
-        self.query         = self.query_projection(decoder_output_embedding) # TODO: Project the query using query_projection
+        self.query = self.query_projection(
+            decoder_output_embedding
+        )  # TODO: Project the query using query_projection
 
-        # Hint: Take a look at torch.bmm for the products below 
+        # Hint: Take a look at torch.bmm for the products below
 
-        raw_weights        = torch.bmm(self.key, self.query.unsqueeze(2)).squeeze(2) # TODO: Calculate raw_weights which is the product of query and key, and is of shape (batch_size, timesteps)
-        masked_raw_weights = raw_weights.masked_fill(self.padding_mask, float('-inf')) # TODO: Mask the raw_weights with self.padding_mask. 
+        raw_weights = torch.bmm(self.key, self.query.unsqueeze(2)).squeeze(
+            2
+        )  # TODO: Calculate raw_weights which is the product of query and key, and is of shape (batch_size, timesteps)
+        masked_raw_weights = raw_weights.masked_fill(
+            self.padding_mask, float("-inf")
+        )  # TODO: Mask the raw_weights with self.padding_mask.
         # Take a look at pytorch's masked_fill_ function (You want the fill value to be a big negative number for the softmax to make it close to 0)
 
-        attention_weights  = self.softmax(masked_raw_weights)# TODO: Calculate the attention weights, which is the softmax of raw_weights
-        context            = torch.bmm(attention_weights.unsqueeze(1), self.value).squeeze(1) # TODO: Calculate the context - it is a product between attention_weights and value
+        attention_weights = self.softmax(
+            masked_raw_weights
+        )  # TODO: Calculate the attention weights, which is the softmax of raw_weights
+        context = torch.bmm(attention_weights.unsqueeze(1), self.value).squeeze(
+            1
+        )  # TODO: Calculate the context - it is a product between attention_weights and value
 
         # Hint: You might need to use squeeze/unsqueeze to make sure that your operations work with bmm
 
-        return context, attention_weights # Return the context, attention_weights
+        return context, attention_weights  # Return the context, attention_weights
 
 
 class Speller(torch.nn.Module):
-
-    def __init__(self, hparams:Hparams, vocab_size, attention_module:Attention= None):
+    def __init__(
+        self,
+        hparams: Hparams,
+        vocab_size,
+        SOS_TOKEN: int,
+        EOS_TOKEN: int,
+        DEVICE: str,
+        attention_module: Attention = None,
+    ):
         super().__init__()
 
         self.hparams = hparams
+        self.SOS_TOKEN = SOS_TOKEN
+        self.EOS_TOKEN = EOS_TOKEN
+        self.DEVICE = DEVICE
 
-        self.vocab_size         = vocab_size
+        self.vocab_size = vocab_size
 
-        self.embedding          = nn.Embedding(vocab_size, self.hparams.dec_emb_size, padding_idx=29) # TODO: Initialize the Embedding Layer (Use the nn.Embedding Layer from torch), make sure you set the correct padding_idx  
+        self.embedding = nn.Embedding(
+            vocab_size, self.hparams.dec_emb_size, padding_idx=EOS_TOKEN
+        )  # TODO: Initialize the Embedding Layer (Use the nn.Embedding Layer from torch), make sure you set the correct padding_idx
 
-        self.lstm_cells         = torch.nn.Sequential(
-                                # Create Two LSTM Cells as per LAS Architecture
-                                # What should the input_size of the first LSTM Cell? 
-                                # Hint: It takes in a combination of the character embedding and context from attention
-                                nn.LSTMCell(self.hparams.dec_emb_size + self.hparams.att_projection_size, self.hparams.dec_hidden_size),
-                                nn.LSTMCell(self.hparams.dec_hidden_size, self.hparams.att_projection_size)
-                                )
-    
-                                # We are using LSTMCells because process individual time steps inputs and not the whole sequence.
-                                # Think why we need this in terms of the query
+        self.lstm_cells = torch.nn.Sequential(
+            # Create Two LSTM Cells as per LAS Architecture
+            # What should the input_size of the first LSTM Cell?
+            # Hint: It takes in a combination of the character embedding and context from attention
+            nn.LSTMCell(
+                self.hparams.dec_emb_size + self.hparams.att_projection_size,
+                self.hparams.dec_hidden_size,
+            ),
+            nn.LSTMCell(self.hparams.dec_hidden_size, self.hparams.att_projection_size),
+        )
 
-        self.char_prob          = nn.Linear(2*self.hparams.att_projection_size, vocab_size) # TODO: Initialize the classification layer to generate your probability distribution over all characters
+        # We are using LSTMCells because process individual time steps inputs and not the whole sequence.
+        # Think why we need this in terms of the query
 
-        self.char_prob.weight   = self.embedding.weight # Weight tying
+        self.char_prob = nn.Linear(
+            2 * self.hparams.att_projection_size, vocab_size
+        )  # TODO: Initialize the classification layer to generate your probability distribution over all characters
 
-        self.attention          = attention_module
-    
-    def forward(self, encoder_outputs, encoder_lens, y = None, tf_rate = 1):
+        self.char_prob.weight = self.embedding.weight  # Weight tying
 
-        '''
-        Args: 
-            embedding: Attention embeddings 
+        self.attention = attention_module
+
+    def forward(self, encoder_outputs, encoder_lens, y=None, tf_rate=1):
+
+        """
+        Args:
+            embedding: Attention embeddings
             hidden_list: List of Hidden States for the LSTM Cells
-        ''' 
+        """
 
         batch_size, encoder_max_seq_len, _ = encoder_outputs.shape
 
+        encoder_outputs = encoder_outputs.to(self.DEVICE)
+
         if self.training:
-            timesteps     = y.shape[1] # The number of timesteps is the sequence of length of your transcript during training
-            label_embed   = self.embedding(y) # Embeddings of the transcript, when we want to use teacher forcing
+            timesteps = y.shape[
+                1
+            ]  # The number of timesteps is the sequence of length of your transcript during training
+            label_embed = self.embedding(
+                y
+            )  # Embeddings of the transcript, when we want to use teacher forcing
         else:
-            timesteps     = 600 # 600 is a design choice that we recommend, however you are free to experiment.
-        
+            timesteps = 600  # 600 is a design choice that we recommend, however you are free to experiment.
 
         # INITS
-        predictions     = []
+        predictions = []
 
         # Initialize the first character input to your decoder, SOS
-        char            = torch.full((batch_size,), fill_value=SOS_TOKEN, dtype= torch.long).to(DEVICE)
+        char = torch.full(
+            (batch_size,), fill_value=self.SOS_TOKEN, dtype=torch.long
+        ).to(self.DEVICE)
 
         # Initialize a list to keep track of LSTM Cell Hidden and Cell Memory States, to None
-        hidden_states   = [None]*len(self.lstm_cells)
+        hidden_states = [None] * len(self.lstm_cells)
 
-        attention_plot          = []
-        context                 = torch.zeros((batch_size, self.hparams.att_projection_size)) # TODO: Initialize context (You have a few choices, refer to the writeup )
-        attention_weights       = torch.zeros(batch_size, encoder_max_seq_len) # Attention Weights are zero if not using Attend Module
+        attention_plot = []
+        context = torch.zeros(
+            (batch_size, self.hparams.att_projection_size)
+        )  # TODO: Initialize context (You have a few choices, refer to the writeup )
+        attention_weights = torch.zeros(
+            batch_size, encoder_max_seq_len
+        )  # Attention Weights are zero if not using Attend Module
 
         # Set Attention Key, Value, Padding Mask just once
         if self.attention != None:
             self.attention.set_key_value_mask(encoder_outputs, encoder_lens)
 
-
         for t in range(timesteps):
-            
-            char_embed = self.embedding(char)#TODO: Generate the embedding for the character at timestep t
+
+            char_embed = self.embedding(
+                char
+            )  # TODO: Generate the embedding for the character at timestep t
 
             if self.training and t > 0:
                 # TODO: We want to decide which embedding to use as input for the decoder during training
-                # We can use the embedding of the transcript character or the embedding of decoded/predicted character, from the previous timestep 
+                # We can use the embedding of the transcript character or the embedding of decoded/predicted character, from the previous timestep
                 # Using the embedding of the transcript character is teacher forcing, it is very important for faster convergence
                 # Use a comparison between a random probability and your teacher forcing rate, to decide which embedding to use
-                
-                if random.random() <= tf_rate:
-                    char_embed = label_embed[:,t-1,:]
-                else:
-                    char_embed = label_embed(char.argmax(dim = -1))
 
-            decoder_input_embedding = torch.cat((char_embed, context), dim=1)# TODO: What do we want to concatenate as input to the decoder? (Use torch.cat)
-            
+                if random.random() <= tf_rate:
+                    char_embed = label_embed[:, t - 1, :]
+                else:
+                    char_embed = label_embed(char.argmax(dim=-1))
+
+            decoder_input_embedding = torch.cat(
+                (char_embed.to(self.DEVICE), context.to(self.DEVICE)), dim=1
+            )  # TODO: What do we want to concatenate as input to the decoder? (Use torch.cat)
+
             # Loop over your lstm cells
             # Each lstm cell takes in an embedding
             for i in range(len(self.lstm_cells)):
                 # An LSTM Cell returns (h,c) -> h = hidden state, c = cell memory state
-                # Using 2 LSTM Cells is akin to a 2 layer LSTM looped through t timesteps 
+                # Using 2 LSTM Cells is akin to a 2 layer LSTM looped through t timesteps
                 # The second LSTM Cell takes in the output hidden state of the first LSTM Cell (from the current timestep) as Input, along with the hidden and cell states of the cell from the previous timestep
-                hidden_states[i] = self.lstm_cells[i](decoder_input_embedding, hidden_states[i])
+                hidden_states[i] = self.lstm_cells[i](
+                    decoder_input_embedding, hidden_states[i]
+                )
                 decoder_input_embedding = hidden_states[i][0]
 
             # The output embedding from the decoder is the hidden state of the last LSTM Cell
@@ -353,42 +407,67 @@ class Speller(torch.nn.Module):
 
             # We compute attention from the output of the last LSTM Cell
             if self.attention != None:
-                context, attention_weights = self.attention(decoder_output_embedding) # The returned query is the projected query
+                context, attention_weights = self.attention(
+                    decoder_output_embedding
+                )  # The returned query is the projected query
 
             attention_plot.append(attention_weights[0].detach().cpu())
 
-            output_embedding     = torch.cat((self.attention.query, context), dim=1) # TODO: Concatenate the projected query with context for the output embedding
+            output_embedding = torch.cat(
+                (self.attention.query, context), dim=1
+            )  # TODO: Concatenate the projected query with context for the output embedding
             # Hint: How can you get the projected query from attention
             # If you are not using attention, what will you use instead of query?
 
-            char_prob            = self.char_prob(output_embedding)
-            
-            # Append the character probability distribution to the list of predictions 
+            char_prob = self.char_prob(output_embedding)
+
+            # Append the character probability distribution to the list of predictions
             predictions.append(char_prob)
 
-            char = char_prob.argmax(axis=1) # TODO: Get the predicted character for the next timestep from the probability distribution 
+            char = char_prob.argmax(
+                axis=1
+            )  # TODO: Get the predicted character for the next timestep from the probability distribution
             # (Hint: Use Greedy Decoding for starters)
 
-        attention_plot  = np.stack(attention_plot)# TODO: Stack list of attetion_plots 
-        predictions     = np.stack(predictions)# TODO: Stack list of predictions 
+        attention_plot = torch.stack(
+            attention_plot
+        )  # TODO: Stack list of attetion_plots
+        predictions = torch.stack(predictions)  # TODO: Stack list of predictions
 
         return predictions, attention_plot
 
 
 class LAS(torch.nn.Module):
-    def __init__(self, hparams:Hparams, vocab_size, input_size=15):
-        
+    def __init__(
+        self,
+        hparams: Hparams,
+        SOS_TOKEN: int,
+        EOS_TOKEN: int,
+        DEVICE: str,
+        vocab_size,
+        input_size=15,
+    ):
+
         super(LAS, self).__init__()
 
-        self.encoder        = ModularListener(hparams, input_size=input_size) # TODO: Initialize Encoder
-        attention_module    = Attention(hparams) # TODO: Initialize Attention
-        self.decoder        = Speller(hparams, vocab_size=vocab_size, attention_module=attention_module) # TODO: Initialize Decoder, make sure you pass the attention module 
+        self.encoder = ModularListener(hparams, input_size=input_size).to(DEVICE)
+        attention_module = Attention(hparams, DEVICE=DEVICE).to(DEVICE)
+        self.decoder = Speller(
+            hparams,
+            vocab_size=vocab_size,
+            SOS_TOKEN=SOS_TOKEN,
+            EOS_TOKEN=EOS_TOKEN,
+            DEVICE=DEVICE,
+            attention_module=attention_module,
+        ).to(DEVICE)
 
-    def forward(self, x, x_lens, y = None, tf_rate = 1):
+    def forward(self, x, x_lens, y=None, tf_rate=1):
 
-        encoder_outputs, encoder_lens = self.encoder(x, x_lens) # from Listener
-        predictions, attention_plot = self.decoder(encoder_outputs, encoder_lens, y, tf_rate)
-        
+        encoder_outputs, encoder_lens = self.encoder(x, x_lens)  # from Listener
+        predictions, attention_plot = self.decoder(
+            encoder_outputs, encoder_lens, y, tf_rate
+        )
+
         return predictions, attention_plot
 
 
@@ -406,11 +485,11 @@ if __name__ == "__main__":
     Y_train = np.load("f0176_hw3p2_train.npy")
     Y_valid = np.load("f0176_hw3p2_dev.npy")
 
-    # This is how you actually need to find out the different trancripts in a dataset. 
+    # This is how you actually need to find out the different trancripts in a dataset.
     # Can you think whats going on here? Why are we using a np.unique?
-    VOCAB_MAP           = dict(zip(np.unique(Y_valid), range(len(np.unique(Y_valid)))))
-    VOCAB_MAP["[PAD]"]  = len(VOCAB_MAP)
-    VOCAB               = list(VOCAB_MAP.keys())
+    VOCAB_MAP = dict(zip(np.unique(Y_valid), range(len(np.unique(Y_valid)))))
+    VOCAB_MAP["[PAD]"] = len(VOCAB_MAP)
+    VOCAB = list(VOCAB_MAP.keys())
 
     SOS_TOKEN = VOCAB_MAP["[SOS]"]
     EOS_TOKEN = VOCAB_MAP["[EOS]"]
@@ -424,11 +503,20 @@ if __name__ == "__main__":
     model = model.to(DEVICE)
 
     # Toy dataset dataloader
-    train_data = ToyDataset('train', X_train, Y_train, X_valid, Y_valid, EOS_TOKEN=EOS_TOKEN)
-    val_data = ToyDataset('valid', X_train, Y_train, X_valid, Y_valid, EOS_TOKEN=EOS_TOKEN)
-    train_loader = torch.utils.data.DataLoader(train_data, num_workers=2,
-                                            batch_size=hparams.batch_size, pin_memory= True,
-                                            shuffle=True, collate_fn=train_data.collate_fn)
+    train_data = ToyDataset(
+        "train", X_train, Y_train, X_valid, Y_valid, EOS_TOKEN=EOS_TOKEN
+    )
+    val_data = ToyDataset(
+        "valid", X_train, Y_train, X_valid, Y_valid, EOS_TOKEN=EOS_TOKEN
+    )
+    train_loader = torch.utils.data.DataLoader(
+        train_data,
+        num_workers=2,
+        batch_size=hparams.batch_size,
+        pin_memory=True,
+        shuffle=True,
+        collate_fn=train_data.collate_fn,
+    )
     # val_loader   = torch.utils.data.DataLoader(val_data, num_workers= 2,
     #                                         batch_size=hparams.batch_size, pin_memory= True,
     #                                         shuffle=False, collate_fn=train_data.collate_fn)
@@ -440,7 +528,4 @@ if __name__ == "__main__":
         print(x.shape, y.shape, lx.shape, ly.shape)
         break
 
-    summary(model,
-            x= x,
-            x_lens= lx,
-            y= y)
+    summary(model, x=x, x_lens=lx, y=y)
