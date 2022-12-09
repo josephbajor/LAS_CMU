@@ -63,10 +63,15 @@ class Hparams:
         keyring_dir: os.PathLike = "/Users/josephbajor/Dev/keyring/"  # MacOS
         model_dir: os.PathLike = "/Users/josephbajor/Dev/CMU-IDL/models/"  # MacOS
 
-    if platform == "cloud":  # Config for GCP/AWS
+    if platform == "GCP":  # Config for GCP
         data_dir: os.PathLike = "/home/josephbajor/data/"  # CompEng
         keyring_dir: os.PathLike = "/home/josephbajor/keyring/"  # CompEng
         model_dir: os.PathLike = "/home/josephbajor/models/"  # CompEng
+
+    if platform == "AWS":  # Config for GCP
+        data_dir: os.PathLike = "/home/ubuntu/data/"  # CompEng
+        keyring_dir: os.PathLike = "/home/ubuntu/keyring/"  # CompEng
+        model_dir: os.PathLike = "/home/ubuntu/models/"  # CompEng
 
     if platform == "BRIDGES-2":  # config for the BRIDGES-2 supercomputer at PSCC
         data_dir: os.PathLike = "/ocean/projects/cis220078p/jbajor/data/hw4p2/"
