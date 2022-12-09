@@ -11,7 +11,7 @@ from train import train, validate
 import wandb
 
 
-if __name__ == "__main__":
+def main():
     best_lev_dist = float("inf")
     tf_rate = 1.0
 
@@ -193,3 +193,7 @@ if __name__ == "__main__":
             },
             model_save_pth,
         )
+
+
+if __name__ == "__main__":
+    main()
