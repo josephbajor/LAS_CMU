@@ -9,6 +9,48 @@ import torchaudio
 from hparams import Hparams
 
 
+class ToyDataset(torch.utils.data.Dataset):
+
+    def __init__(self, partition, X_train, Y_train, X_valid, Y_valid, EOS_TOKEN):
+
+        self.EOS_TOKEN = EOS_TOKEN
+
+        if partition == "train":
+            self.mfccs = X_train[:, :, :15]
+            self.transcripts = Y_train
+
+        elif partition == "valid":
+            self.mfccs = X_valid[:, :, :15]
+            self.transcripts = Y_valid
+
+        assert len(self.mfccs) == len(self.transcripts)
+
+        self.length = len(self.mfccs)
+
+    def __len__(self):
+
+        return self.length
+
+    def __getitem__(self, i):
+
+        x = torch.tensor(self.mfccs[i])
+        y = torch.tensor(self.transcripts[i])
+
+        return x, y
+
+    def collate_fn(self, batch):
+
+        x_batch, y_batch = list(zip(*batch))
+
+        x_lens      = [x.shape[0] for x in x_batch] 
+        y_lens      = [y.shape[0] for y in y_batch] 
+
+        x_batch_pad = torch.nn.utils.rnn.pad_sequence(x_batch, batch_first=True, padding_value= self.EOS_TOKEN)
+        y_batch_pad = torch.nn.utils.rnn.pad_sequence(y_batch, batch_first=True, padding_value= self.EOS_TOKEN)
+        
+        return x_batch_pad, y_batch_pad, torch.tensor(x_lens), torch.tensor(y_lens)
+
+
 def collate_fn(batch):
 
     # batch of input mfcc coefficients

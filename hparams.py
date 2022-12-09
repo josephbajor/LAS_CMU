@@ -8,27 +8,38 @@ class Hparams:
     ### Dataloader Parameters ###
     num_workers: int = 5  # number of CPU workers for the dataloader
     cps_norm: bool = True
+    train_subset: bool = False
 
     ### Training Parameters ###
-    # train_subset: bool = False
-    # epochs: int = 40
-    # batch_size: int = 100
-    # lr: float = 1e-3
-    # weight_decay: float = 1e-3
-    # mixed_p: bool = True
-    # warm_start: bool = False  # Load model if a trained version of this config exists
-    # autosubmit: bool = True  # Submit to kaggle at end ot training run
+    epochs: int = 40
+    batch_size: int = 64
+    lr: float = 1e-3
+    weight_decay: float = 1e-3
+    mixed_p: bool = True
+    warm_start: bool = False  # Load model if a trained version of this config exists
+    autosubmit: bool = True  # Submit to kaggle at end ot training run
 
     ###### Model Parameters ######
 
     ### Listener ###
-    init_emb_dims:int = 128
+    enc_use_conv1d_emb:bool = True
+    enc_init_emb_dims:int = 64
 
-    locked_dropout:bool = True
-    p_lockdrop:float = 0.3
+    enc_locked_dropout:bool = True
+    enc_p_lockdrop:float = 0.3
 
-    hidden_size:int = 64
-    pyramidal_layers:int = 3 # Downsamples by 2^n
+    enc_hidden_size:int = 64
+    enc_pyramidal_layers:int = 2 # Downsamples by 2^n
+
+    enc_output_size:int = enc_init_emb_dims*(2**enc_pyramidal_layers) * 2
+
+    ### Attention ###
+    att_projection_size:int = 128
+
+    ### Speller ###
+    dec_emb_size:int = 256
+    dec_hidden_size:int = 512
+    dec_output_size:int = 128
 
     ###### END Model Parameters ######
 
