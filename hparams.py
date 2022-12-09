@@ -9,12 +9,13 @@ class Hparams:
     num_workers: int = 5  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
+    dataset_version: str = "toy" # "toy" or "main"
 
     ### Training Parameters ###
     epochs: int = 40
-    batch_size: int = 64
+    batch_size: int = 96
     lr: float = 1e-3
-    weight_decay: float = 1e-3
+    weight_decay: float = 5e-6
     mixed_p: bool = True
     warm_start: bool = False  # Load model if a trained version of this config exists
     autosubmit: bool = True  # Submit to kaggle at end ot training run
@@ -46,7 +47,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "desktop"
+    platform: str = "mac"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
@@ -75,7 +76,7 @@ class Hparams:
     ### WandB Parameters ###
     architecture: str = f"Early_Test"
     project: str = "hw4p2-ablations"
-    use_wandb: bool = True
+    use_wandb: bool = False
 
     def wandb_export(self):
         to_exclude = [

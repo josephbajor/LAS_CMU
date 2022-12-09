@@ -440,7 +440,7 @@ if __name__ == "__main__":
         print(x.shape, y.shape, lx.shape, ly.shape)
         break
 
-    summary(model, 
-            x= x, 
-            x_lens= lx, 
+    summary(model,
+            x= x,
+            x_lens= lx,
             y= y)
