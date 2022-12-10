@@ -10,7 +10,6 @@ from hparams import Hparams
 
 
 class ToyDataset(torch.utils.data.Dataset):
-
     def __init__(self, partition, X_train, Y_train, X_valid, Y_valid, EOS_TOKEN):
 
         self.EOS_TOKEN = EOS_TOKEN
@@ -42,12 +41,16 @@ class ToyDataset(torch.utils.data.Dataset):
 
         x_batch, y_batch = list(zip(*batch))
 
-        x_lens      = [x.shape[0] for x in x_batch] 
-        y_lens      = [y.shape[0] for y in y_batch] 
+        x_lens = [x.shape[0] for x in x_batch]
+        y_lens = [y.shape[0] for y in y_batch]
 
-        x_batch_pad = torch.nn.utils.rnn.pad_sequence(x_batch, batch_first=True, padding_value= self.EOS_TOKEN)
-        y_batch_pad = torch.nn.utils.rnn.pad_sequence(y_batch, batch_first=True, padding_value= self.EOS_TOKEN)
-        
+        x_batch_pad = torch.nn.utils.rnn.pad_sequence(
+            x_batch, batch_first=True, padding_value=self.EOS_TOKEN
+        )
+        y_batch_pad = torch.nn.utils.rnn.pad_sequence(
+            y_batch, batch_first=True, padding_value=self.EOS_TOKEN
+        )
+
         return x_batch_pad, y_batch_pad, torch.tensor(x_lens), torch.tensor(y_lens)
 
 
@@ -91,26 +94,18 @@ def collate_fn_test(batch):
 
 
 class AudioDataset(torch.utils.data.Dataset):
-    def __init__(self, hparams: Hparams, type="train"):
+    def __init__(self, hparams: Hparams, type, VOCAB_MAP):
         """
         Initializes the dataset.
         """
         self.hparams = hparams
+        self.phone_map = VOCAB_MAP
 
         # Load the directory and all files in them
         self.mfccs, self.transcripts = [], []
 
         self.train_subset = self.hparams.train_subset
         self.cps_norm = self.hparams.cps_norm
-
-        # Load phonetic transcription from json
-        # This helps convert CMUDict to ARPAbet
-        with open("phonetics.json") as f:
-            self.mapping = json.load(f)
-
-        self.PHONEMES = list(self.mapping.keys())
-        self.LABELS = list(self.mapping.values())
-        self.phone_map = {phone: idx for idx, phone in enumerate(self.PHONEMES)}
 
         if type == "train":
 
@@ -177,15 +172,6 @@ class AudioTestDataset(torch.utils.data.Dataset):
         self.train_subset = hparams.train_subset
         self.cps_norm = hparams.cps_norm
 
-        # Load phonetic transcription from json
-        # This helps convert CMUDict to ARPAbet
-        with open("phonetics.json") as f:
-            self.mapping = json.load(f)
-
-        self.PHONEMES = list(self.mapping.keys())
-        self.LABELS = list(self.mapping.values())
-        self.phone_map = {phone: idx for idx, phone in enumerate(self.PHONEMES)}
-
         self.train_dirs = ["test-clean"]
 
         for train_set in self.train_dirs:
@@ -213,10 +199,10 @@ class AudioTestDataset(torch.utils.data.Dataset):
         return mfcc
 
 
-def build_loaders(hparams: Hparams):
+def build_loaders(hparams: Hparams, VOCAB_MAP):
 
-    train_data = AudioDataset(hparams, type="train")
-    val_data = AudioDataset(hparams, type="val")
+    train_data = AudioDataset(hparams, type="train", VOCAB_MAP=VOCAB_MAP)
+    val_data = AudioDataset(hparams, type="val", VOCAB_MAP=VOCAB_MAP)
     test_data = AudioTestDataset(hparams)
 
     train_loader = torch.utils.data.DataLoader(

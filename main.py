@@ -100,7 +100,7 @@ def main():
         SOS_TOKEN = VOCAB_MAP["<sos>"]
         EOS_TOKEN = VOCAB_MAP["<eos>"]
 
-        train_loader, val_loader, test_loader = build_loaders(hparams)
+        train_loader, val_loader, test_loader = build_loaders(hparams, VOCAB_MAP)
 
     else:
         assert AssertionError, "Dataset version must be 'toy' or 'main'!"

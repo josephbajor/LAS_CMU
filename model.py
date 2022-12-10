@@ -269,7 +269,7 @@ class Attention(torch.nn.Module):
         # Take a look at pytorch's masked_fill_ function (You want the fill value to be a big negative number for the softmax to make it close to 0)
 
         attention_weights = self.softmax(
-            masked_raw_weights
+            raw_weights / np.sqrt(self.hparams.att_projection_size)
         )  # TODO: Calculate the attention weights, which is the softmax of raw_weights
         context = torch.bmm(attention_weights.unsqueeze(1), self.value).squeeze(
             1

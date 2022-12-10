@@ -84,9 +84,10 @@ def calc_edit_distance(data_type, predictions, y, ly, vocab, print_example=False
 
     for batch_idx in range(batch_size):
 
+        y_sliced = indices_to_chars(y[batch_idx, 0 : ly[batch_idx]], vocab)
+        pred_sliced = indices_to_chars(predictions[batch_idx], vocab)
+
         if data_type == "toy":
-            y_sliced = indices_to_chars(y[batch_idx, 0 : ly[batch_idx]], vocab)
-            pred_sliced = indices_to_chars(predictions[batch_idx], vocab)
             dist += Levenshtein.distance("".join(y_sliced), "".join(pred_sliced))
 
             if print_example:
@@ -142,7 +143,7 @@ def submit_to_kaggle(hparams: Hparams, preds: list) -> None:
     submission.to_csv("submit.csv", index=False)
 
     subprocess.run(
-        f'kaggle competitions submit -c 11-785-f22-hw3p2-slack -f submit.csv -m "{hparams.architecture}"',
+        f'kaggle competitions submit -c 11-785-f22-hw4p2 -f submit.csv -m "{hparams.architecture}"',
         shell=True,
     )
 

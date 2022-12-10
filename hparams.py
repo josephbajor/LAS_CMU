@@ -9,7 +9,7 @@ class Hparams:
     num_workers: int = 5  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
-    dataset_version: str = "toy" # "toy" or "main"
+    dataset_version: str = "main"  # "toy" or "main"
 
     ### Training Parameters ###
     epochs: int = 40
@@ -23,24 +23,24 @@ class Hparams:
     ###### Model Parameters ######
 
     ### Listener ###
-    enc_use_conv1d_emb:bool = True
-    enc_init_emb_dims:int = 64
+    enc_use_conv1d_emb: bool = True
+    enc_init_emb_dims: int = 64
 
-    enc_locked_dropout:bool = True
-    enc_p_lockdrop:float = 0.3
+    enc_locked_dropout: bool = True
+    enc_p_lockdrop: float = 0.3
 
-    enc_hidden_size:int = 64
-    enc_pyramidal_layers:int = 2 # Downsamples by 2^n
+    enc_hidden_size: int = 64
+    enc_pyramidal_layers: int = 2  # Downsamples by 2^n
 
-    enc_output_size:int = enc_init_emb_dims*(2**enc_pyramidal_layers) * 2
+    enc_output_size: int = enc_init_emb_dims * (2**enc_pyramidal_layers) * 2
 
     ### Attention ###
-    att_projection_size:int = 128
+    att_projection_size: int = 128
 
     ### Speller ###
-    dec_emb_size:int = 256
-    dec_hidden_size:int = 512
-    dec_output_size:int = 128
+    dec_emb_size: int = 256
+    dec_hidden_size: int = 512
+    dec_output_size: int = 128
 
     ###### END Model Parameters ######
 
@@ -69,7 +69,7 @@ class Hparams:
         model_dir: os.PathLike = "/home/josephbajor/models/"  # CompEng
 
     if platform == "AWS":  # Config for GCP
-        data_dir: os.PathLike = "/home/ubuntu/data/"  # CompEng
+        data_dir: os.PathLike = "/home/ubuntu/data/hw4p2"  # CompEng
         keyring_dir: os.PathLike = "/home/ubuntu/keyring/"  # CompEng
         model_dir: os.PathLike = "/home/ubuntu/models/"  # CompEng
 
