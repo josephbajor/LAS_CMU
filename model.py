@@ -80,8 +80,8 @@ class pBLSTM(torch.nn.Module):
 
         x, xl = self.trunc_reshape(x, xl)
 
-        # if self.locked_dropout:
-        #     x = self.ld(x)
+        if self.locked_dropout:
+            x = self.ld(x)
 
         x = pack_padded_sequence(x, xl, batch_first=True, enforce_sorted=False)
 
@@ -158,11 +158,18 @@ class ModularListener(nn.Module):
             padding=2,
         )
 
-        self.base_lstm = torch.nn.LSTM(
-            input_size=hparams.enc_init_emb_dims,
-            hidden_size=hparams.enc_hidden_size,
-            bidirectional=True,
-        )
+        if hparams.enc_use_conv1d_emb:
+            self.base_lstm = torch.nn.LSTM(
+                input_size=hparams.enc_init_emb_dims,
+                hidden_size=hparams.enc_hidden_size,
+                bidirectional=True,
+            )
+        else:
+            self.base_lstm = torch.nn.LSTM(
+                input_size=input_size,
+                hidden_size=hparams.enc_hidden_size,
+                bidirectional=True,
+            )
 
         self.pBLSTMs = torch.nn.Sequential()
 
