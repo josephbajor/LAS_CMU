@@ -63,8 +63,8 @@ class pBLSTM(torch.nn.Module):
             x = x[:, :-1, :]
 
         x = x.reshape((x.shape[0], x.shape[1] // 2, x.shape[2] * 2))
-        x_lens = x_lens // 2
-        # x_lens = torch.clamp(x_lens, max=x.shape[1])
+        # x_lens = x_lens // 2
+        x_lens = torch.clamp(x_lens, max=x.shape[1])
 
         return x, x_lens
 
@@ -80,8 +80,8 @@ class pBLSTM(torch.nn.Module):
 
         x, xl = self.trunc_reshape(x, xl)
 
-        if self.locked_dropout:
-            x = self.ld(x)
+        # if self.locked_dropout:
+        #     x = self.ld(x)
 
         x = pack_padded_sequence(x, xl, batch_first=True, enforce_sorted=False)
 
@@ -311,7 +311,7 @@ class Speller(torch.nn.Module):
                 self.hparams.dec_emb_size + self.hparams.att_projection_size,
                 self.hparams.dec_hidden_size,
             ),
-            nn.LSTMCell(self.hparams.dec_hidden_size, self.hparams.att_projection_size),
+            nn.LSTMCell(self.hparams.dec_hidden_size, self.hparams.dec_output_size),
         )
 
         # We are using LSTMCells because process individual time steps inputs and not the whole sequence.
@@ -384,8 +384,6 @@ class Speller(torch.nn.Module):
 
                 if random.random() <= tf_rate:
                     char_embed = label_embed[:, t - 1, :]
-                else:
-                    char_embed = label_embed(char.argmax(dim=-1))
 
             decoder_input_embedding = torch.cat(
                 (char_embed.to(self.DEVICE), context.to(self.DEVICE)), dim=1
