@@ -13,7 +13,7 @@ class Hparams:
 
     ### Training Parameters ###
     epochs: int = 40
-    batch_size: int = 64
+    batch_size: int = 128
     lr: float = 1e-3
     weight_decay: float = 5e-6
     mixed_p: bool = True
@@ -29,7 +29,7 @@ class Hparams:
     enc_locked_dropout: bool = False
     enc_p_lockdrop: float = 0.3
 
-    enc_hidden_size: int = 64
+    enc_hidden_size: int = 128
     enc_pyramidal_layers: int = 2  # Downsamples by 2^n
 
     enc_output_size: int = enc_hidden_size * (2**enc_pyramidal_layers) * 2
@@ -47,7 +47,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "desktop"
+    platform: str = "GCP"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
