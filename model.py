@@ -52,15 +52,15 @@ class pBLSTM(torch.nn.Module):
         self.ld = lstm_locked_dropout(p=p)
 
         self.blstm = nn.LSTM(
-            input_size=input_size * 2, hidden_size=hidden_size, bidirectional=True
+            input_size=input_size * 2, hidden_size=hidden_size, bidirectional=True, batch_first=True
         )  # TODO: Initialize a single layer bidirectional LSTM with the given input_size and hidden_size
 
     def trunc_reshape(self, x, x_lens):
         # TODO: If you have odd number of timesteps, how can you handle it? (Hint: You can exclude them)
         # TODO: Reshape x. When reshaping x, you have to reduce number of timesteps by a downsampling factor while increasing number of features by the same factor
         # TODO: Reduce lengths by the same downsampling factor
-        if x.shape[1] % 2 != 0:
-            x = x[:, :-1, :]
+
+        x = x[:, :(x.shape[1]//2)*2]
 
         x = x.reshape((x.shape[0], x.shape[1] // 2, x.shape[2] * 2))
         # x_lens = x_lens // 2
@@ -163,12 +163,14 @@ class ModularListener(nn.Module):
                 input_size=hparams.enc_init_emb_dims,
                 hidden_size=hparams.enc_hidden_size,
                 bidirectional=True,
+                batch_first=True
             )
         else:
             self.base_lstm = torch.nn.LSTM(
                 input_size=input_size,
                 hidden_size=hparams.enc_hidden_size,
                 bidirectional=True,
+                batch_first=True
             )
 
         self.pBLSTMs = torch.nn.Sequential()
@@ -270,7 +272,7 @@ class Attention(torch.nn.Module):
         raw_weights = torch.bmm(self.key, self.query.unsqueeze(2)).squeeze(
             2
         )  # TODO: Calculate raw_weights which is the product of query and key, and is of shape (batch_size, timesteps)
-        masked_raw_weights = raw_weights.masked_fill(
+        raw_weights.masked_fill_(
             self.padding_mask, float("-inf")
         )  # TODO: Mask the raw_weights with self.padding_mask.
         # Take a look at pytorch's masked_fill_ function (You want the fill value to be a big negative number for the softmax to make it close to 0)

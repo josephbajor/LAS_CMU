@@ -9,7 +9,7 @@ class Hparams:
     num_workers: int = 5  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
-    dataset_version: str = "main"  # "toy" or "main"
+    dataset_version: str = "toy"  # "toy" or "main"
 
     ### Training Parameters ###
     epochs: int = 40
@@ -24,15 +24,15 @@ class Hparams:
 
     ### Listener ###
     enc_use_conv1d_emb: bool = True
-    enc_init_emb_dims: int = 64
+    enc_init_emb_dims: int = 96
 
-    enc_locked_dropout: bool = True
+    enc_locked_dropout: bool = False
     enc_p_lockdrop: float = 0.3
 
     enc_hidden_size: int = 64
     enc_pyramidal_layers: int = 2  # Downsamples by 2^n
 
-    enc_output_size: int = enc_init_emb_dims * (2**enc_pyramidal_layers) * 2
+    enc_output_size: int = enc_hidden_size * (2**enc_pyramidal_layers) * 2
 
     ### Attention ###
     att_projection_size: int = 128
@@ -47,7 +47,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "desktop"
+    platform: str = "mac"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
