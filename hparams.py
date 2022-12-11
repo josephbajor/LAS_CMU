@@ -9,7 +9,7 @@ class Hparams:
     num_workers: int = 5  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
-    dataset_version: str = "toy"  # "toy" or "main"
+    dataset_version: str = "main"  # "toy" or "main"
 
     ### Training Parameters ###
     epochs: int = 40

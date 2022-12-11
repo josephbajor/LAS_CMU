@@ -166,7 +166,16 @@ def main():
         print("Validation Levenshtein Distance: {:.07f}".format(valid_dist))
 
         # Plot Attention
-        plot_attention(attention_plot)
+        if hparams.use_wandb == False:
+            plot_attention(attention_plot)
+        else:
+            wandb.log(
+                {
+                    "attention_map": wandb.plots.HeatMap(
+                        matrix_values=attention_plot, show_text=False
+                    )
+                }
+            )
 
         # Log metrics to Wandb
         wandb.log(
