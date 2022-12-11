@@ -52,7 +52,10 @@ class pBLSTM(torch.nn.Module):
         self.ld = lstm_locked_dropout(p=p)
 
         self.blstm = nn.LSTM(
-            input_size=input_size * 2, hidden_size=hidden_size, bidirectional=True, batch_first=True
+            input_size=input_size * 2,
+            hidden_size=hidden_size,
+            bidirectional=True,
+            batch_first=True,
         )  # TODO: Initialize a single layer bidirectional LSTM with the given input_size and hidden_size
 
     def trunc_reshape(self, x, x_lens):
@@ -60,7 +63,7 @@ class pBLSTM(torch.nn.Module):
         # TODO: Reshape x. When reshaping x, you have to reduce number of timesteps by a downsampling factor while increasing number of features by the same factor
         # TODO: Reduce lengths by the same downsampling factor
 
-        x = x[:, :(x.shape[1]//2)*2]
+        x = x[:, : (x.shape[1] // 2) * 2]
 
         x = x.reshape((x.shape[0], x.shape[1] // 2, x.shape[2] * 2))
         # x_lens = x_lens // 2
@@ -163,14 +166,14 @@ class ModularListener(nn.Module):
                 input_size=hparams.enc_init_emb_dims,
                 hidden_size=hparams.enc_hidden_size,
                 bidirectional=True,
-                batch_first=True
+                batch_first=True,
             )
         else:
             self.base_lstm = torch.nn.LSTM(
                 input_size=input_size,
                 hidden_size=hparams.enc_hidden_size,
                 bidirectional=True,
-                batch_first=True
+                batch_first=True,
             )
 
         self.pBLSTMs = torch.nn.Sequential()
@@ -437,9 +440,9 @@ class Speller(torch.nn.Module):
             # (Hint: Use Greedy Decoding for starters)
 
         attention_plot = torch.stack(
-            attention_plot
+            attention_plot, dim=0
         )  # TODO: Stack list of attetion_plots
-        predictions = torch.stack(predictions)  # TODO: Stack list of predictions
+        predictions = torch.stack(predictions, dim=1)  # TODO: Stack list of predictions
 
         return predictions, attention_plot
 

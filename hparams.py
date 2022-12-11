@@ -13,7 +13,7 @@ class Hparams:
 
     ### Training Parameters ###
     epochs: int = 40
-    batch_size: int = 96
+    batch_size: int = 64
     lr: float = 1e-3
     weight_decay: float = 5e-6
     mixed_p: bool = True
@@ -47,7 +47,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "mac"
+    platform: str = "desktop"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (

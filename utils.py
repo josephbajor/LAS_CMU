@@ -80,7 +80,7 @@ def indices_to_chars(indices, vocab, EOS_TOKEN=29, SOS_TOKEN=0):
 def calc_edit_distance(data_type, predictions, y, ly, vocab, print_example=False):
 
     dist = 0
-    batch_size, seq_len = predictions.T.shape
+    batch_size, seq_len = predictions.shape
 
     for batch_idx in range(batch_size):
 

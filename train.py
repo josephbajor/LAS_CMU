@@ -105,7 +105,7 @@ def validate(model, dataloader, data_type, DEVICE, VOCAB):
 
         # Calculate Levenshtein Distance
         running_lev_dist += calc_edit_distance(
-            data_type, greedy_predictions, y, ly, VOCAB, print_example=False
+            data_type, greedy_predictions, y, ly, VOCAB, print_example=True
         )  # You can use print_example = True for one specific index i in your batches if you want
 
         batch_bar.set_postfix(dist="{:.04f}".format(running_lev_dist / (i + 1)))
