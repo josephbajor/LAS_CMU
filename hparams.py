@@ -13,7 +13,7 @@ class Hparams:
 
     ### Training Parameters ###
     epochs: int = 40
-    batch_size: int = 12
+    batch_size: int = 128
     lr: float = 1e-3
     weight_decay: float = 5e-6
     mixed_p: bool = True
