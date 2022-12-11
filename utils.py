@@ -100,7 +100,7 @@ def calc_edit_distance(data_type, predictions, y, ly, vocab, print_example=False
             pred_string = "".join(pred_sliced)
             dist += Levenshtein.distance(pred_string, y_string)
 
-            if print_example and batch_idx <= 5:
+            if print_example and batch_idx >= 5:
                 print("Ground Truth : ", y_string)
                 print("Prediction   : ", pred_string)
 

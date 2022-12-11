@@ -9,11 +9,11 @@ class Hparams:
     num_workers: int = 5  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
-    dataset_version: str = "main"  # "toy" or "main"
+    dataset_version: str = "toy"  # "toy" or "main"
 
     ### Training Parameters ###
     epochs: int = 40
-    batch_size: int = 128
+    batch_size: int = 12
     lr: float = 1e-3
     weight_decay: float = 5e-6
     mixed_p: bool = True
@@ -47,7 +47,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "GCP"
+    platform: str = "desktop"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
