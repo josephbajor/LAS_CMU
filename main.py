@@ -171,7 +171,7 @@ def main():
         else:
             wandb.log(
                 {
-                    "attention_map": wandb.plot.HeatMap(
+                    "attention_map": wandb.plots.HeatMap(
                         matrix_values=attention_plot,
                         show_text=False,
                         x_labels=[i for i in range(attention_plot.shape[1])],
