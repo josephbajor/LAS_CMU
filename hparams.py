@@ -9,7 +9,7 @@ class Hparams:
     num_workers: int = 5  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
-    dataset_version: str = "toy"  # "toy" or "main"
+    dataset_version: str = "main"  # "toy" or "main"
 
     ### Training Parameters ###
     epochs: int = 40
@@ -47,7 +47,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "desktop"
+    platform: str = "AWS"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
@@ -81,7 +81,7 @@ class Hparams:
     ### WandB Parameters ###
     architecture: str = f"Early_Test"
     project: str = "hw4p2-ablations"
-    use_wandb: bool = False
+    use_wandb: bool = True
 
     def wandb_export(self):
         to_exclude = [
