@@ -71,7 +71,7 @@ def collate_fn(batch):
     # Apply data transformations
     transforms = [
         torchaudio.transforms.TimeMasking(time_mask_param=20, p=0.3),
-        torchaudio.transforms.FrequencyMasking(freq_mask_param=8),
+        torchaudio.transforms.FrequencyMasking(freq_mask_param=5),
     ]
 
     for t in transforms:

@@ -132,6 +132,7 @@ def main():
         optimizer.load_state_dict(params["optimizer_state_dict"])
         scheduler.load_state_dict(params["scheduler_state_dict"])
         epoch_offset = params["epoch"]
+        tf_rate = params["tf_rate"]
 
     run = initiate_run(hparams, model)
 
@@ -167,6 +168,12 @@ def main():
         # Print your metrics
         print("Validation Levenshtein Distance: {:.07f}".format(valid_dist))
 
+        scheduler.step()
+
+        # Scale down teacher forcing rate after attention convergence
+        if running_loss <= 0.2:
+            tf_rate -= 0.02
+
         # Plot Attention
         if hparams.use_wandb == False:
             plot_attention(attention_plot, save=False)
@@ -182,7 +189,7 @@ def main():
             #         )
             #     }
             # )
-            wandb.log({"attention_map": wandb.Image("att.jpg")})
+            wandb.log({"attention_map": wandb.Image("att.png")})
 
         # Log metrics to Wandb
         wandb.log(
@@ -206,6 +213,7 @@ def main():
                 "scheduler_state_dict": scheduler.state_dict(),
                 "val_dist": valid_dist,
                 "epoch": epoch,
+                "tf_rate": tf_rate,
             },
             model_save_pth,
         )

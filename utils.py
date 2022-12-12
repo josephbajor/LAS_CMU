@@ -157,7 +157,7 @@ def plot_attention(attention, save=False):
     map = sns.heatmap(attention, cmap="viridis")
     if save:
         fig = map.get_figure()
-        fig.savefig("att.jpg")
+        fig.savefig("att.png")
     else:
         plt.show()
 

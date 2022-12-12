@@ -189,6 +189,10 @@ class ModularListener(nn.Module):
                 ),
             )
 
+        # Initialize base LSTM weights
+        for _, param in self.base_lstm.named_parameters():
+            nn.init.uniform(param, -0.1, 0.1)
+
     def forward(self, x, xl):
 
         if self.hparams.enc_use_conv1d_emb:
