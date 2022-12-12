@@ -81,7 +81,7 @@ def train(
     return running_loss, running_perplexity, attention_plot
 
 
-def validate(model, dataloader, data_type, DEVICE, VOCAB):
+def validate(model, dataloader, data_type, DEVICE, VOCAB, EOS_TOKEN, SOS_TOKEN):
 
     model.eval()
 
@@ -103,14 +103,21 @@ def validate(model, dataloader, data_type, DEVICE, VOCAB):
             predictions, axis=-1
         )  # TODO: How do you get the most likely character from each distribution in the batch?
 
-        if i + 1 < len(dataloader):
-            print_example = False
-        else:
+        if i + 1 == len(dataloader):
             print_example = True
+        else:
+            print_example = False
 
         # Calculate Levenshtein Distance
         running_lev_dist += calc_edit_distance(
-            data_type, greedy_predictions, y, ly, VOCAB, print_example=print_example
+            data_type,
+            greedy_predictions,
+            y,
+            ly,
+            VOCAB,
+            EOS_TOKEN,
+            SOS_TOKEN,
+            print_example=print_example,
         )  # You can use print_example = True for one specific index i in your batches if you want
 
         batch_bar.set_postfix(dist="{:.04f}".format(running_lev_dist / (i + 1)))

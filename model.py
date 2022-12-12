@@ -239,8 +239,7 @@ class Attention(torch.nn.Module):
             self.hparams.dec_output_size, self.hparams.att_projection_size
         )
 
-        self.softmax = nn.Softmax(1)  # Check dim
-        # Tip: What is the shape of energy? And what are those?
+        self.softmax = nn.Softmax(1)
 
     # As you know, in the attention mechanism, the key, value and mask are calculated only once.
     # This function is used to calculate them and set them to self

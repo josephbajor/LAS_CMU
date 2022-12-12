@@ -6,14 +6,14 @@ import os
 class Hparams:
 
     ### Dataloader Parameters ###
-    num_workers: int = 5  # number of CPU workers for the dataloader
+    num_workers: int = 4  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
     dataset_version: str = "main"  # "toy" or "main"
 
     ### Training Parameters ###
     epochs: int = 40
-    batch_size: int = 128
+    batch_size: int = 160
     lr: float = 1e-3
     weight_decay: float = 5e-6
     mixed_p: bool = True
@@ -29,7 +29,7 @@ class Hparams:
     enc_locked_dropout: bool = False
     enc_p_lockdrop: float = 0.3
 
-    enc_hidden_size: int = 128
+    enc_hidden_size: int = 150
     enc_pyramidal_layers: int = 2  # Downsamples by 2^n
 
     enc_output_size: int = enc_hidden_size * (2**enc_pyramidal_layers) * 2
@@ -79,7 +79,7 @@ class Hparams:
         model_dir: os.PathLike = "/ocean/projects/cis220078p/jbajor/models/"
 
     ### WandB Parameters ###
-    architecture: str = f"Early_Test"
+    architecture: str = f"LAS_v1"
     project: str = "hw4p2-ablations"
     use_wandb: bool = True
 

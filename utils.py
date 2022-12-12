@@ -61,36 +61,38 @@ def prepare_instance() -> None:
     return NotImplementedError
 
 
-def indices_to_chars(indices, vocab, EOS_TOKEN=29, SOS_TOKEN=0):
+def indices_to_chars(indices, vocab, EOS_TOKEN, SOS_TOKEN):
     tokens = []
     for i in indices:  # This loops through all the indices
-        if (
-            vocab[int(i)] == SOS_TOKEN
-        ):  # If SOS is encountered, dont add it to the final list
+        if int(i) == SOS_TOKEN:  # If SOS is encountered, dont add it to the final list
             continue
-        elif (
-            vocab[int(i)] == EOS_TOKEN
-        ):  # If EOS is encountered, stop the decoding process
+        elif int(i) == EOS_TOKEN:  # If EOS is encountered, stop the decoding process
             break
         else:
             tokens.append(vocab[i])
     return tokens
 
 
-def calc_edit_distance(data_type, predictions, y, ly, vocab, print_example=False):
+def calc_edit_distance(
+    data_type, predictions, y, ly, vocab, EOS_TOKEN, SOS_TOKEN, print_example=False
+):
 
     dist = 0
     batch_size, seq_len = predictions.shape
 
     for batch_idx in range(batch_size):
 
-        y_sliced = indices_to_chars(y[batch_idx, 0 : ly[batch_idx]], vocab)
-        pred_sliced = indices_to_chars(predictions[batch_idx], vocab)
+        y_sliced = indices_to_chars(
+            y[batch_idx, 0 : ly[batch_idx]], vocab, EOS_TOKEN, SOS_TOKEN
+        )
+        pred_sliced = indices_to_chars(
+            predictions[batch_idx], vocab, EOS_TOKEN, SOS_TOKEN
+        )
 
         if data_type == "toy":
             dist += Levenshtein.distance("".join(y_sliced), "".join(pred_sliced))
 
-            if print_example:
+            if print_example and batch_idx <= 5:
                 print("Ground Truth : ", y_sliced)
                 print("Prediction   : ", pred_sliced)
 
@@ -100,7 +102,7 @@ def calc_edit_distance(data_type, predictions, y, ly, vocab, print_example=False
             pred_string = "".join(pred_sliced)
             dist += Levenshtein.distance(pred_string, y_string)
 
-            if print_example and batch_idx >= 5:
+            if print_example and batch_idx <= 5:
                 print("Ground Truth : ", y_string)
                 print("Prediction   : ", pred_string)
 
@@ -148,12 +150,16 @@ def submit_to_kaggle(hparams: Hparams, preds: list) -> None:
     )
 
 
-def plot_attention(attention):
+def plot_attention(attention, save=False):
     # Function for plotting attention
     # You need to get a diagonal plot
     plt.clf()
-    sns.heatmap(attention, cmap="GnBu")
-    plt.show()
+    map = sns.heatmap(attention, cmap="viridis")
+    if save:
+        fig = map.get_figure()
+        fig.savefig("att.jpg")
+    else:
+        plt.show()
 
 
 def setup_model_paths(hparams):

@@ -161,24 +161,28 @@ def main():
             data_type=hparams.dataset_version,
             DEVICE=DEVICE,
             VOCAB=VOCAB,
+            SOS_TOKEN=SOS_TOKEN,
+            EOS_TOKEN=EOS_TOKEN,
         )
         # Print your metrics
         print("Validation Levenshtein Distance: {:.07f}".format(valid_dist))
 
         # Plot Attention
         if hparams.use_wandb == False:
-            plot_attention(attention_plot)
+            plot_attention(attention_plot, save=False)
         else:
-            wandb.log(
-                {
-                    "attention_map": wandb.plots.HeatMap(
-                        matrix_values=attention_plot,
-                        show_text=False,
-                        x_labels=[i for i in range(attention_plot.shape[1])],
-                        y_labels=[i for i in range(attention_plot.shape[0])],
-                    )
-                }
-            )
+            plot_attention(attention_plot, save=True)
+            # wandb.log(
+            #     {
+            #         "attention_map": wandb.plots.HeatMap(
+            #             matrix_values=attention_plot,
+            #             show_text=False,
+            #             x_labels=[i for i in range(attention_plot.shape[1])],
+            #             y_labels=[i for i in range(attention_plot.shape[0])],
+            #         )
+            #     }
+            # )
+            wandb.log({"attention_map": wandb.Image("att.jpg")})
 
         # Log metrics to Wandb
         wandb.log(
