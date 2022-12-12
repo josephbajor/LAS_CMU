@@ -9,7 +9,9 @@ class Hparams:
     num_workers: int = 4  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
-    dataset_version: str = "main"  # "toy" or "main"
+    dataset_version: str = "toy"  # "toy" or "main"
+    train_augs: bool = False
+    val_augs: bool = False
 
     ### Training Parameters ###
     epochs: int = 40
@@ -17,7 +19,7 @@ class Hparams:
     lr: float = 1e-3
     weight_decay: float = 5e-6
     mixed_p: bool = True
-    warm_start: bool = False  # Load model if a trained version of this config exists
+    warm_start: bool = True  # Load model if a trained version of this config exists
     autosubmit: bool = True  # Submit to kaggle at end ot training run
 
     ###### Model Parameters ######
@@ -39,15 +41,16 @@ class Hparams:
 
     ### Speller ###
     dec_emb_size: int = 256
+    dec_drop_p: float = 0.3
     dec_hidden_size: int = 512
-    dec_output_size: int = 128
+    dec_output_size: int = 256
 
     ###### END Model Parameters ######
 
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "AWS"
+    platform: str = "desktop"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
@@ -79,9 +82,9 @@ class Hparams:
         model_dir: os.PathLike = "/ocean/projects/cis220078p/jbajor/models/"
 
     ### WandB Parameters ###
-    architecture: str = f"LAS_v1"
+    architecture: str = f"LAS_v2"
     project: str = "hw4p2-ablations"
-    use_wandb: bool = True
+    use_wandb: bool = False
 
     def wandb_export(self):
         to_exclude = [

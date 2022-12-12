@@ -147,7 +147,7 @@ def main():
             criterion=criterion,
             scaler=scaler,
             optimizer=optimizer,
-            teacher_forcing_rate=1,
+            teacher_forcing_rate=tf_rate,
             DEVICE=DEVICE,
         )
         print(
@@ -168,11 +168,10 @@ def main():
         # Print your metrics
         print("Validation Levenshtein Distance: {:.07f}".format(valid_dist))
 
-        scheduler.step()
-
         # Scale down teacher forcing rate after attention convergence
-        if running_loss <= 0.2:
-            tf_rate -= 0.02
+        if valid_dist <= 20:
+            tf_rate -= 0.015
+            scheduler.step(running_loss)
 
         # Plot Attention
         if hparams.use_wandb == False:

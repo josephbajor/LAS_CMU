@@ -24,6 +24,24 @@ class lstm_locked_dropout(nn.Module):
         return x * mask
 
 
+def block_diagonal(shape: tuple, K):
+    out = torch.zeros(shape)
+
+    val = 1 / (2 * K + 1)
+
+    for i in range(out.shape[1]):
+        a = max(0, i - K)
+        b = min(out.shape[1] - 1, i + K)
+        out[a:b, i] = val
+
+    return out
+
+
+def init_weights(module, fn):
+    with torch.no_grad():
+        module.weight = torch.nn.Parameter(fn(module.weight.shape, K=5))
+
+
 class pBLSTM(torch.nn.Module):
 
     """
@@ -57,6 +75,10 @@ class pBLSTM(torch.nn.Module):
             bidirectional=True,
             batch_first=True,
         )  # TODO: Initialize a single layer bidirectional LSTM with the given input_size and hidden_size
+
+        # Initialize weights
+        for _, param in self.blstm.named_parameters():
+            nn.init.uniform_(param, -0.1, 0.1)
 
     def trunc_reshape(self, x, x_lens):
         # TODO: If you have odd number of timesteps, how can you handle it? (Hint: You can exclude them)
@@ -191,7 +213,7 @@ class ModularListener(nn.Module):
 
         # Initialize base LSTM weights
         for _, param in self.base_lstm.named_parameters():
-            nn.init.uniform(param, -0.1, 0.1)
+            nn.init.uniform_(param, -0.1, 0.1)
 
     def forward(self, x, xl):
 
@@ -244,6 +266,11 @@ class Attention(torch.nn.Module):
         )
 
         self.softmax = nn.Softmax(1)
+
+        # Initialize weights with block diagonals
+        init_weights(self.key_projection, block_diagonal)
+        init_weights(self.value_projection, block_diagonal)
+        init_weights(self.query_projection, block_diagonal)
 
     # As you know, in the attention mechanism, the key, value and mask are calculated only once.
     # This function is used to calculate them and set them to self
@@ -318,19 +345,33 @@ class Speller(torch.nn.Module):
             vocab_size, self.hparams.dec_emb_size, padding_idx=EOS_TOKEN
         )  # TODO: Initialize the Embedding Layer (Use the nn.Embedding Layer from torch), make sure you set the correct padding_idx
 
-        self.lstm_cells = torch.nn.Sequential(
-            # Create Two LSTM Cells as per LAS Architecture
-            # What should the input_size of the first LSTM Cell?
-            # Hint: It takes in a combination of the character embedding and context from attention
-            nn.LSTMCell(
-                self.hparams.dec_emb_size + self.hparams.att_projection_size,
-                self.hparams.dec_hidden_size,
-            ),
-            nn.LSTMCell(self.hparams.dec_hidden_size, self.hparams.dec_output_size),
+        self.lstm_cells = torch.nn.ModuleList(
+            [
+                # Create Two LSTM Cells as per LAS Architecture
+                # What should the input_size of the first LSTM Cell?
+                # Hint: It takes in a combination of the character embedding and context from attention
+                nn.LSTMCell(
+                    self.hparams.dec_emb_size + self.hparams.att_projection_size,
+                    self.hparams.dec_hidden_size,
+                ),
+                nn.LSTMCell(self.hparams.dec_hidden_size, self.hparams.dec_hidden_size),
+                nn.LSTMCell(self.hparams.dec_hidden_size, self.hparams.dec_output_size),
+            ]
         )
 
-        # We are using LSTMCells because process individual time steps inputs and not the whole sequence.
-        # Think why we need this in terms of the query
+        self.dropouts = torch.nn.ModuleList(
+            [
+                nn.Dropout(p=hparams.dec_drop_p),
+                nn.Dropout(p=hparams.dec_drop_p),
+                nn.Dropout(p=hparams.dec_drop_p),
+            ]
+        )
+
+        # Initialize weights
+        for module in self.lstm_cells:
+            if isinstance(module, nn.LSTMCell):
+                for _, param in module.named_parameters():
+                    nn.init.uniform_(param, -0.1, 0.1)
 
         self.char_prob = nn.Linear(
             2 * self.hparams.att_projection_size, vocab_size
@@ -353,14 +394,14 @@ class Speller(torch.nn.Module):
         encoder_outputs = encoder_outputs.to(self.DEVICE)
 
         if self.training:
-            timesteps = y.shape[
-                1
-            ]  # The number of timesteps is the sequence of length of your transcript during training
-            label_embed = self.embedding(
-                y
-            )  # Embeddings of the transcript, when we want to use teacher forcing
+            timesteps = y.shape[1]
+            # The number of timesteps is the sequence of length of your transcript during training
+
+            label_embed = self.embedding(y)
+            # Embeddings of the transcript, when we want to use teacher forcing
+
         else:
-            timesteps = 600  # 600 is a design choice that we recommend, however you are free to experiment.
+            timesteps = 600
 
         # INITS
         predictions = []
@@ -404,16 +445,15 @@ class Speller(torch.nn.Module):
                 (char_embed.to(self.DEVICE), context.to(self.DEVICE)), dim=1
             )  # TODO: What do we want to concatenate as input to the decoder? (Use torch.cat)
 
-            # Loop over your lstm cells
-            # Each lstm cell takes in an embedding
+            # LTSM loop
             for i in range(len(self.lstm_cells)):
                 # An LSTM Cell returns (h,c) -> h = hidden state, c = cell memory state
                 # Using 2 LSTM Cells is akin to a 2 layer LSTM looped through t timesteps
                 # The second LSTM Cell takes in the output hidden state of the first LSTM Cell (from the current timestep) as Input, along with the hidden and cell states of the cell from the previous timestep
-                hidden_states[i] = self.lstm_cells[i](
-                    decoder_input_embedding, hidden_states[i]
-                )
-                decoder_input_embedding = hidden_states[i][0]
+                (h, c) = self.lstm_cells[i](decoder_input_embedding, hidden_states[i])
+                h = self.dropouts[i](h)
+                decoder_input_embedding = h
+                hidden_states[i] = (h, c)
 
             # The output embedding from the decoder is the hidden state of the last LSTM Cell
             decoder_output_embedding = hidden_states[-1][0]

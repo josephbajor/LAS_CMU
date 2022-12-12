@@ -86,6 +86,29 @@ def collate_fn(batch):
     )
 
 
+def collate_fn_no_transforms(batch):
+
+    # batch of input mfcc coefficients
+    batch_mfcc = [mfcc for mfcc, transcript in batch]
+    # batch of output phonemes
+    batch_transcript = [transcript for mfcc, transcript in batch]
+
+    # pad batches
+    batch_mfcc_pad = pad_sequence(batch_mfcc, batch_first=True)
+    lengths_mfcc = [mfcc.shape[0] for mfcc in batch_mfcc]
+
+    batch_transcript_pad = pad_sequence(batch_transcript, batch_first=True)
+    lengths_transcript = [transcript.shape[0] for transcript in batch_transcript]
+
+    # Return the following values: padded features, padded labels, actual length of features, actual length of the labels
+    return (
+        batch_mfcc_pad,
+        batch_transcript_pad,
+        torch.tensor(lengths_mfcc),
+        torch.tensor(lengths_transcript),
+    )
+
+
 def collate_fn_test(batch):
     batch_mfcc_pad = pad_sequence(batch, batch_first=True)
     lengths_mfcc = [mfcc.shape[0] for mfcc in batch]
@@ -205,20 +228,30 @@ def build_loaders(hparams: Hparams, VOCAB_MAP):
     val_data = AudioDataset(hparams, type="val", VOCAB_MAP=VOCAB_MAP)
     test_data = AudioTestDataset(hparams)
 
+    if hparams.train_augs:
+        train_collate_fn = collate_fn
+    else:
+        train_collate_fn = collate_fn_no_transforms
+
+    if hparams.val_augs:
+        val_collate_fn = collate_fn
+    else:
+        val_collate_fn = collate_fn_no_transforms
+
     train_loader = torch.utils.data.DataLoader(
         train_data,
         batch_size=hparams.batch_size,
         shuffle=True,
         num_workers=hparams.num_workers,
         pin_memory=True,
-        collate_fn=collate_fn,
+        collate_fn=train_collate_fn,
     )
     val_loader = torch.utils.data.DataLoader(
         val_data,
         batch_size=hparams.batch_size,
         shuffle=False,
         num_workers=hparams.num_workers,
-        collate_fn=collate_fn,
+        collate_fn=val_collate_fn,
     )
     test_loader = torch.utils.data.DataLoader(
         test_data,
