@@ -40,7 +40,7 @@ class Hparams:
     att_projection_size: int = 256
 
     ### Speller ###
-    dec_emb_size: int = 256
+    dec_emb_size: int = 512
     dec_drop_p: float = 0.3
     dec_hidden_size: int = 512
     dec_output_size: int = 256
@@ -50,7 +50,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "GCP"
+    platform: str = "AWS"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
@@ -84,7 +84,7 @@ class Hparams:
     ### WandB Parameters ###
     architecture: str = f"LAS_v2"
     project: str = "hw4p2-ablations"
-    use_wandb: bool = False
+    use_wandb: bool = True
 
     def wandb_export(self):
         to_exclude = [
