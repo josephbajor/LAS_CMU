@@ -6,7 +6,7 @@ import os
 class Hparams:
 
     ### Dataloader Parameters ###
-    num_workers: int = 4  # number of CPU workers for the dataloader
+    num_workers: int = 8  # number of CPU workers for the dataloader
     cps_norm: bool = True
     train_subset: bool = False
     dataset_version: str = "main"  # "toy" or "main"
@@ -37,11 +37,11 @@ class Hparams:
     enc_output_size: int = enc_hidden_size * (2**enc_pyramidal_layers) * 2
 
     ### Attention ###
-    att_projection_size: int = 256
+    att_projection_size: int = 200
 
     ### Speller ###
-    dec_emb_size: int = 512
-    dec_drop_p: float = 0.3
+    dec_emb_size: int = 400
+    dec_drop_p: float = 0.2
     dec_hidden_size: int = 512
     dec_output_size: int = 256
 
@@ -50,7 +50,7 @@ class Hparams:
     ### Sys Parameters ###
     force_load_path: os.PathLike = None
     force_save_path: os.PathLike = None
-    platform: str = "AWS"
+    platform: str = "GCP"
 
     if platform == "desktop":  # config for local desktop
         data_dir: os.PathLike = (
@@ -67,7 +67,7 @@ class Hparams:
         model_dir: os.PathLike = "/Users/josephbajor/Dev/CMU-IDL/models/"  # MacOS
 
     if platform == "GCP":  # Config for GCP
-        data_dir: os.PathLike = "/home/josephbajor/data/"  # CompEng
+        data_dir: os.PathLike = "/home/josephbajor/data/hw4p2/"  # CompEng
         keyring_dir: os.PathLike = "/home/josephbajor/keyring/"  # CompEng
         model_dir: os.PathLike = "/home/josephbajor/models/"  # CompEng
 
@@ -82,7 +82,7 @@ class Hparams:
         model_dir: os.PathLike = "/ocean/projects/cis220078p/jbajor/models/"
 
     ### WandB Parameters ###
-    architecture: str = f"LAS_v2"
+    architecture: str = f"LAS_v3"
     project: str = "hw4p2-ablations"
     use_wandb: bool = True
 
